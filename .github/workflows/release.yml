@@ -1,0 +1,43 @@
+name: Release
+
+# Build the installable ZIPs and publish them to a GitHub Release whenever a
+# version tag (e.g. v1.0.1) is pushed.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify tag matches package version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}".TrimStart('v')
+          $ver = ([regex]::Match((Get-Content pkg_jsecdash.xml -Raw), '<version>([^<]+)</version>')).Groups[1].Value
+          Write-Host "Tag version: $tag | Manifest version: $ver"
+          if ($tag -ne $ver) {
+              Write-Error "Tag ($tag) does not match pkg_jsecdash.xml version ($ver). Bump the manifests before tagging."
+              exit 1
+          }
+
+      - name: Build packages
+        shell: pwsh
+        run: ./build/build.ps1
+
+      - name: Create GitHub Release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/pkg_jsecdash-*.zip
+            dist/com_jsecdash.zip
+            dist/plg_system_jsecdash.zip
