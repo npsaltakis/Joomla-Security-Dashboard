@@ -52,6 +52,10 @@ A security suite for **Joomla 5 and Joomla 6**, delivered as a single installabl
 | --- | --- |
 | ![Health Check](docs/screenshots/healthcheck.png) | ![IP Blocks](docs/screenshots/blocks.png) |
 
+| File Scanner |
+| --- |
+| ![File Scanner](docs/screenshots/scanner.png) |
+
 > Screenshots live in [`docs/screenshots/`](docs/screenshots/). See that folder for the
 > expected file names if you want to refresh them.
 
