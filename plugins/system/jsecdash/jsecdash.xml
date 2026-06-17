@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension type="plugin" group="system" method="upgrade">
+    <name>plg_system_jsecdash</name>
+    <author>Joomla Security Dashboard</author>
+    <creationDate>2026-06-16</creationDate>
+    <copyright>(C) 2026 Joomla Security Dashboard</copyright>
+    <license>GNU General Public License version 2 or later; see LICENSE.txt</license>
+    <version>1.0.1</version>
+    <description>PLG_SYSTEM_JSECDASH_XML_DESCRIPTION</description>
+    <namespace path="src">Joomla\Plugin\System\Jsecdash</namespace>
+    <files>
+        <folder plugin="jsecdash">services</folder>
+        <folder>src</folder>
+        <folder>sql</folder>
+    </files>
+    <languages>
+        <language tag="en-GB">language/en-GB/plg_system_jsecdash.ini</language>
+        <language tag="en-GB">language/en-GB/plg_system_jsecdash.sys.ini</language>
+    </languages>
+    <install>
+        <sql>
+            <file driver="mysql" charset="utf8">sql/install.mysql.utf8.sql</file>
+        </sql>
+    </install>
+    <uninstall>
+        <sql>
+            <file driver="mysql" charset="utf8">sql/uninstall.mysql.utf8.sql</file>
+        </sql>
+    </uninstall>
+    <update>
+        <schemas>
+            <schemapath type="mysql">sql/updates/mysql</schemapath>
+        </schemas>
+    </update>
+    <config>
+        <fields name="params">
+            <fieldset name="basic">
+                <field
+                    name="max_attempts"
+                    type="number"
+                    label="PLG_SYSTEM_JSECDASH_FIELD_MAX_ATTEMPTS_LABEL"
+                    description="PLG_SYSTEM_JSECDASH_FIELD_MAX_ATTEMPTS_DESC"
+                    default="5"
+                    filter="integer"
+                />
+                <field
+                    name="attempt_window"
+                    type="number"
+                    label="PLG_SYSTEM_JSECDASH_FIELD_ATTEMPT_WINDOW_LABEL"
+                    description="PLG_SYSTEM_JSECDASH_FIELD_ATTEMPT_WINDOW_DESC"
+                    default="15"
+                    filter="integer"
+                />
+                <field
+                    name="lockout_minutes"
+                    type="number"
+                    label="PLG_SYSTEM_JSECDASH_FIELD_LOCKOUT_MINUTES_LABEL"
+                    description="PLG_SYSTEM_JSECDASH_FIELD_LOCKOUT_MINUTES_DESC"
+                    default="30"
+                    filter="integer"
+                />
+                <field
+                    name="enable_ip_block"
+                    type="radio"
+                    layout="joomla.form.field.radio.switcher"
+                    label="PLG_SYSTEM_JSECDASH_FIELD_ENABLE_IP_BLOCK_LABEL"
+                    default="1"
+                    filter="integer"
+                >
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+                <field
+                    name="whitelist_ips"
+                    type="textarea"
+                    rows="4"
+                    label="PLG_SYSTEM_JSECDASH_FIELD_WHITELIST_IPS_LABEL"
+                    description="PLG_SYSTEM_JSECDASH_FIELD_WHITELIST_IPS_DESC"
+                    filter="raw"
+                />
+            </fieldset>
+            <fieldset name="alerts" label="PLG_SYSTEM_JSECDASH_FIELDSET_ALERTS">
+                <field
+                    name="enable_email_alert"
+                    type="radio"
+                    layout="joomla.form.field.radio.switcher"
+                    label="PLG_SYSTEM_JSECDASH_FIELD_ENABLE_EMAIL_ALERT_LABEL"
+                    description="PLG_SYSTEM_JSECDASH_FIELD_ENABLE_EMAIL_ALERT_DESC"
+                    default="0"
+                    filter="integer"
+                >
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+                <field
+                    name="alert_email"
+                    type="email"
+                    label="PLG_SYSTEM_JSECDASH_FIELD_ALERT_EMAIL_LABEL"
+                    description="PLG_SYSTEM_JSECDASH_FIELD_ALERT_EMAIL_DESC"
+                    showon="enable_email_alert:1"
+                    filter="string"
+                />
+            </fieldset>
+            <fieldset name="hardening" label="PLG_SYSTEM_JSECDASH_FIELDSET_HARDENING">
+                <field
+                    name="admin_secret_key"
+                    type="text"
+                    label="PLG_SYSTEM_JSECDASH_FIELD_ADMIN_SECRET_LABEL"
+                    description="PLG_SYSTEM_JSECDASH_FIELD_ADMIN_SECRET_DESC"
+                    filter="cmd"
+                />
+            </fieldset>
+            <fieldset name="waf" label="PLG_SYSTEM_JSECDASH_FIELDSET_WAF">
+                <field
+                    name="waf_mode"
+                    type="list"
+                    label="PLG_SYSTEM_JSECDASH_FIELD_WAF_MODE_LABEL"
+                    description="PLG_SYSTEM_JSECDASH_FIELD_WAF_MODE_DESC"
+                    default="detect"
+                    filter="cmd"
+                >
+                    <option value="off">PLG_SYSTEM_JSECDASH_WAF_MODE_OFF</option>
+                    <option value="detect">PLG_SYSTEM_JSECDASH_WAF_MODE_DETECT</option>
+                    <option value="block">PLG_SYSTEM_JSECDASH_WAF_MODE_BLOCK</option>
+                </field>
+                <field
+                    name="waf_cat_sqli"
+                    type="radio"
+                    layout="joomla.form.field.radio.switcher"
+                    label="PLG_SYSTEM_JSECDASH_FIELD_WAF_CAT_SQLI_LABEL"
+                    default="1"
+                    filter="integer"
+                    showon="waf_mode!:off"
+                >
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+                <field
+                    name="waf_cat_xss"
+                    type="radio"
+                    layout="joomla.form.field.radio.switcher"
+                    label="PLG_SYSTEM_JSECDASH_FIELD_WAF_CAT_XSS_LABEL"
+                    default="1"
+                    filter="integer"
+                    showon="waf_mode!:off"
+                >
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+                <field
+                    name="waf_cat_lfi"
+                    type="radio"
+                    layout="joomla.form.field.radio.switcher"
+                    label="PLG_SYSTEM_JSECDASH_FIELD_WAF_CAT_LFI_LABEL"
+                    default="1"
+                    filter="integer"
+                    showon="waf_mode!:off"
+                >
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+                <field
+                    name="waf_cat_cmdi"
+                    type="radio"
+                    layout="joomla.form.field.radio.switcher"
+                    label="PLG_SYSTEM_JSECDASH_FIELD_WAF_CAT_CMDI_LABEL"
+                    default="1"
+                    filter="integer"
+                    showon="waf_mode!:off"
+                >
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+                <field
+                    name="waf_cat_scanner"
+                    type="radio"
+                    layout="joomla.form.field.radio.switcher"
+                    label="PLG_SYSTEM_JSECDASH_FIELD_WAF_CAT_SCANNER_LABEL"
+                    default="1"
+                    filter="integer"
+                    showon="waf_mode!:off"
+                >
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+                <field
+                    name="waf_cat_exploit"
+                    type="radio"
+                    layout="joomla.form.field.radio.switcher"
+                    label="PLG_SYSTEM_JSECDASH_FIELD_WAF_CAT_EXPLOIT_LABEL"
+                    default="1"
+                    filter="integer"
+                    showon="waf_mode!:off"
+                >
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+                <field
+                    name="waf_escalate_threshold"
+                    type="number"
+                    label="PLG_SYSTEM_JSECDASH_FIELD_WAF_ESCALATE_THRESHOLD_LABEL"
+                    description="PLG_SYSTEM_JSECDASH_FIELD_WAF_ESCALATE_THRESHOLD_DESC"
+                    default="10"
+                    filter="integer"
+                    showon="waf_mode:block"
+                />
+                <field
+                    name="waf_escalate_window"
+                    type="number"
+                    label="PLG_SYSTEM_JSECDASH_FIELD_WAF_ESCALATE_WINDOW_LABEL"
+                    description="PLG_SYSTEM_JSECDASH_FIELD_WAF_ESCALATE_WINDOW_DESC"
+                    default="60"
+                    filter="integer"
+                    showon="waf_mode:block"
+                />
+                <field
+                    name="waf_custom_rules"
+                    type="textarea"
+                    rows="5"
+                    label="PLG_SYSTEM_JSECDASH_FIELD_WAF_CUSTOM_RULES_LABEL"
+                    description="PLG_SYSTEM_JSECDASH_FIELD_WAF_CUSTOM_RULES_DESC"
+                    filter="raw"
+                    showon="waf_mode!:off"
+                />
+            </fieldset>
+        </fields>
+    </config>
+</extension>

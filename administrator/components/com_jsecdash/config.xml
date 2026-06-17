@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <fieldset
+        name="scanner"
+        label="COM_JSECDASH_CONFIG_SCANNER_LABEL"
+        description="COM_JSECDASH_CONFIG_SCANNER_DESC"
+    >
+        <field
+            name="scan_extensions"
+            type="text"
+            label="COM_JSECDASH_CONFIG_SCAN_EXTENSIONS_LABEL"
+            description="COM_JSECDASH_CONFIG_SCAN_EXTENSIONS_DESC"
+            default="php,js,phtml,inc"
+            filter="string"
+        />
+        <field
+            name="excluded_dirs"
+            type="text"
+            label="COM_JSECDASH_CONFIG_EXCLUDED_DIRS_LABEL"
+            description="COM_JSECDASH_CONFIG_EXCLUDED_DIRS_DESC"
+            default="cache,tmp,logs,.git,node_modules"
+            filter="string"
+        />
+    </fieldset>
+
+    <fieldset
+        name="permissions"
+        label="JCONFIG_PERMISSIONS_LABEL"
+        description="JCONFIG_PERMISSIONS_DESC"
+    >
+        <field
+            name="rules"
+            type="rules"
+            label="JCONFIG_PERMISSIONS_LABEL"
+            class="inputbox"
+            validate="rules"
+            filter="rules"
+            component="com_jsecdash"
+            section="component"
+        />
+    </fieldset>
+</config>

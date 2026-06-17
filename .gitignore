@@ -1,0 +1,22 @@
+# Build artifacts
+/dist/
+/build/
+*.zip
+
+# Runtime data created by the extension (never source)
+administrator/components/com_jsecdash/backups/
+administrator/components/com_jsecdash/quarantine/
+
+# IDE / editor
+.idea/
+.vscode/
+*.sublime-*
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Logs / temp
+*.log
+*.tmp
