@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/) and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.0.2] - 2026-06-17
+
+### Added
+- File Integrity Scanner now runs as a chunked AJAX job with a live progress bar
+  showing the percentage and the file currently being hashed. This also avoids PHP
+  execution-timeout limits on large sites.
+
+### Changed
+- Baseline and scan are driven by new `scanner.start` / `scanner.step` JSON endpoints
+  instead of a single blocking request.
+
 ## [1.0.1] - 2026-06-17
 
 ### Added
@@ -26,5 +37,6 @@ All notable changes to this project are documented here. The format is based on
   audit log and database backup.
 - System plugin with login-failure tracking, IP enforcement and admin-secret URL hardening.
 
+[1.0.2]: https://github.com/npsaltakis/Joomla-Security-Dashboard/releases/tag/v1.0.2
 [1.0.1]: https://github.com/npsaltakis/Joomla-Security-Dashboard/releases/tag/v1.0.1
 [1.0.0]: https://github.com/npsaltakis/Joomla-Security-Dashboard/releases/tag/v1.0.0
