@@ -160,4 +160,11 @@ $cards = [
             <?php endif; ?>
         </div>
     </div>
+
+    <?php if ($this->version) : ?>
+        <p class="text-end text-muted small mt-3 mb-0">
+            <span class="icon-shield-alt" aria-hidden="true"></span>
+            <?php echo Text::sprintf('COM_JSECDASH_VERSION', $this->escape($this->version)); ?>
+        </p>
+    <?php endif; ?>
 </div>

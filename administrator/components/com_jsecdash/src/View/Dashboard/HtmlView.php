@@ -31,6 +31,12 @@ class HtmlView extends BaseHtmlView
     protected $stats;
 
     /**
+     * @var  string
+     * @since  1.0.2
+     */
+    protected $version = '';
+
+    /**
      * @param   string  $tpl  The name of the template file to parse.
      *
      * @return  void
@@ -42,6 +48,9 @@ class HtmlView extends BaseHtmlView
         /** @var DashboardModel $model */
         $model       = $this->getModel();
         $this->stats = $model->getStats();
+
+        $manifest      = simplexml_load_file(JPATH_ADMINISTRATOR . '/components/com_jsecdash/jsecdash.xml');
+        $this->version = $manifest ? (string) $manifest->version : '';
 
         $this->addToolbar();
 
