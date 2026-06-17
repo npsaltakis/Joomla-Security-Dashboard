@@ -7,9 +7,9 @@
     <license>GNU General Public License version 2 or later; see LICENSE.txt</license>
     <packagename>jsecdash</packagename>
     <version>1.0.1</version>
-    <url>https://github.com/YOUR_GH_USER/com_jsecdash</url>
+    <url>https://github.com/npsaltakis/Joomla-Security-Dashboard</url>
     <packager>Joomla Security Dashboard</packager>
-    <packagerurl>https://github.com/YOUR_GH_USER/com_jsecdash</packagerurl>
+    <packagerurl>https://github.com/npsaltakis/Joomla-Security-Dashboard</packagerurl>
     <description>Installs the Joomla Security Dashboard component together with its system plugin (login lockout, IP blocking, web application firewall, .htaccess hardening, file integrity scanning, audit log and database backup).</description>
 
     <files folder="packages">
@@ -18,6 +18,6 @@
     </files>
 
     <updateservers>
-        <server type="extension" name="Joomla Security Dashboard Updates">https://raw.githubusercontent.com/YOUR_GH_USER/com_jsecdash/main/updates/pkg_jsecdash.xml</server>
+        <server type="extension" name="Joomla Security Dashboard Updates">https://raw.githubusercontent.com/npsaltakis/Joomla-Security-Dashboard/main/updates/pkg_jsecdash.xml</server>
     </updateservers>
 </extension>

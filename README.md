@@ -1,12 +1,17 @@
 # Joomla Security Dashboard (`pkg_jsecdash`)
 
-A Joomla 5 security suite delivered as a single installable package containing:
+A security suite for **Joomla 5 and Joomla 6**, delivered as a single installable package containing:
 
 - **`com_jsecdash`** — administrator component (dashboard UI): security health check, IP
   blocks, **Web Application Firewall**, `.htaccess` generator, file integrity scanner,
   audit log and database backup.
 - **`plg_system_jsecdash`** — system plugin (the enforcement engine): login lockout,
   IP blocking, admin-secret URL, and the WAF request inspection / logging.
+
+## Requirements
+
+- Joomla **5.x or 6.x**
+- PHP **8.1+**
 
 ## Repository layout
 
@@ -57,9 +62,7 @@ Joomla on update (the plugin manifest declares `<update><schemas>`). All stateme
 
 > **1.0.1** adds the `#__jsecdash_waf_log` table (WAF event log).
 
-## ⚠️ Before publishing
+## Links
 
-Replace **`YOUR_GH_USER`** with your GitHub account/organisation in:
-
-- `pkg_jsecdash.xml` (`<url>`, `<packagerurl>`, `<updateservers>`)
-- `updates/pkg_jsecdash.xml` (all URLs)
+- Repository: <https://github.com/npsaltakis/Joomla-Security-Dashboard>
+- Update server: `updates/pkg_jsecdash.xml` (served raw from `main`)

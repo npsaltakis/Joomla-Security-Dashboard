@@ -5,8 +5,6 @@
     Joomla polls this file to discover new versions. Add a new <update> block for
     every release (newest first is fine; Joomla compares versions). The download
     URL must point to the package ZIP attached to the matching GitHub Release.
-
-    Replace YOUR_GH_USER with your GitHub account/organisation before publishing.
 -->
 <updates>
     <update>
@@ -15,16 +13,16 @@
         <element>pkg_jsecdash</element>
         <type>package</type>
         <version>1.0.1</version>
-        <infourl title="Joomla Security Dashboard 1.0.1">https://github.com/YOUR_GH_USER/com_jsecdash/releases/tag/v1.0.1</infourl>
+        <infourl title="Joomla Security Dashboard 1.0.1">https://github.com/npsaltakis/Joomla-Security-Dashboard/releases/tag/v1.0.1</infourl>
         <downloads>
-            <downloadurl type="full" format="zip">https://github.com/YOUR_GH_USER/com_jsecdash/releases/download/v1.0.1/pkg_jsecdash-1.0.1.zip</downloadurl>
+            <downloadurl type="full" format="zip">https://github.com/npsaltakis/Joomla-Security-Dashboard/releases/download/v1.0.1/pkg_jsecdash-1.0.1.zip</downloadurl>
         </downloads>
         <tags>
             <tag>stable</tag>
         </tags>
         <maintainer>Joomla Security Dashboard</maintainer>
-        <maintainerurl>https://github.com/YOUR_GH_USER/com_jsecdash</maintainerurl>
-        <targetplatform name="joomla" version="5.[01234]"/>
+        <maintainerurl>https://github.com/npsaltakis/Joomla-Security-Dashboard</maintainerurl>
+        <targetplatform name="joomla" version="[56].[0-9]+"/>
         <php_minimum>8.1</php_minimum>
     </update>
 </updates>
