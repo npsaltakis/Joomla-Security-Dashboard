@@ -6,6 +6,7 @@
 # Runtime data created by the extension (never source)
 administrator/components/com_jsecdash/backups/
 administrator/components/com_jsecdash/quarantine/
+administrator/components/com_jsecdash/tmp/
 
 # IDE / editor
 .idea/

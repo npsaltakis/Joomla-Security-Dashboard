@@ -474,6 +474,328 @@ class ScannerModel extends BaseDatabaseModel
     }
 
     /**
+     * Walks the configured scan roots and returns just the relative paths of the
+     * files that should be tracked (no hashing). Used to build a work list for
+     * the chunked/AJAX baseline and scan jobs so progress can be reported.
+     *
+     * @return  string[]
+     *
+     * @since   1.0.0
+     */
+    private function enumerate(): array
+    {
+        $files        = [];
+        $excludedDirs = $this->getExcludedDirs();
+        $extensions   = $this->getScanExtensions();
+
+        foreach (self::SCAN_ROOTS as $root) {
+            $absoluteRoot = JPATH_ROOT . '/' . $root;
+
+            if (!is_dir($absoluteRoot)) {
+                continue;
+            }
+
+            $filter = new \RecursiveCallbackFilterIterator(
+                new \RecursiveDirectoryIterator($absoluteRoot, \FilesystemIterator::SKIP_DOTS),
+                function (\SplFileInfo $current) use ($excludedDirs) {
+                    if ($current->isDir()) {
+                        return !\in_array($current->getFilename(), $excludedDirs, true);
+                    }
+
+                    return true;
+                }
+            );
+
+            $iterator = new \RecursiveIteratorIterator($filter, \RecursiveIteratorIterator::SELF_FIRST);
+
+            /** @var \SplFileInfo $fileInfo */
+            foreach ($iterator as $fileInfo) {
+                if ($fileInfo->isDir()) {
+                    continue;
+                }
+
+                if (!\in_array(strtolower($fileInfo->getExtension()), $extensions, true)) {
+                    continue;
+                }
+
+                $files[] = ltrim(str_replace('\\', '/', str_replace(JPATH_ROOT, '', $fileInfo->getPathname())), '/');
+            }
+        }
+
+        sort($files);
+
+        return $files;
+    }
+
+    /**
+     * Hashes a single tracked file.
+     *
+     * @param   string  $relative  Path relative to the site root.
+     *
+     * @return  array|null  ['hash', 'size', 'modified'] or null when unreadable.
+     *
+     * @since   1.0.0
+     */
+    private function hashOne(string $relative): ?array
+    {
+        $abs = JPATH_ROOT . '/' . $relative;
+
+        if (!is_file($abs)) {
+            return null;
+        }
+
+        $hash = @hash_file('sha256', $abs);
+
+        if ($hash === false) {
+            return null;
+        }
+
+        return [
+            'hash'     => $hash,
+            'size'     => (int) (@filesize($abs) ?: 0),
+            'modified' => Factory::getDate('@' . (@filemtime($abs) ?: time()))->toSql(),
+        ];
+    }
+
+    /**
+     * @return  string
+     *
+     * @since   1.0.0
+     */
+    private function getTmpDir(): string
+    {
+        return JPATH_ROOT . '/administrator/components/com_jsecdash/tmp';
+    }
+
+    /**
+     * Ensures the job-state folder exists and is protected from web access.
+     *
+     * @return  void
+     *
+     * @since   1.0.0
+     */
+    private function ensureTmpDir(): void
+    {
+        $dir = $this->getTmpDir();
+
+        if (!is_dir($dir)) {
+            Folder::create($dir);
+        }
+
+        if (!is_file($dir . '/.htaccess')) {
+            File::write($dir . '/.htaccess', "Require all denied\n<IfModule !mod_authz_core.c>\nDeny from all\n</IfModule>\n");
+        }
+
+        if (!is_file($dir . '/index.html')) {
+            File::write($dir . '/index.html', '<!DOCTYPE html><title></title>');
+        }
+    }
+
+    /**
+     * Resolves and validates the path of a job-state file from its token.
+     *
+     * @param   string  $token  The job token.
+     *
+     * @return  string|false
+     *
+     * @since   1.0.0
+     */
+    private function statePath(string $token)
+    {
+        if (!preg_match('/^[a-f0-9]{16}$/', $token)) {
+            return false;
+        }
+
+        return $this->getTmpDir() . '/scan-' . $token . '.json';
+    }
+
+    /**
+     * Starts a chunked baseline or scan job: enumerates the files to process,
+     * persists the work list to a token-keyed state file and returns the token
+     * and total file count so the front-end can drive a progress bar.
+     *
+     * @param   string  $mode  Either 'baseline' or 'scan'.
+     *
+     * @return  array  ['token' => string, 'total' => int]
+     *
+     * @since   1.0.0
+     */
+    public function startJob(string $mode): array
+    {
+        if (\function_exists('set_time_limit')) {
+            @set_time_limit(0);
+        }
+
+        $this->ensureTmpDir();
+
+        $files = $this->enumerate();
+        $token = bin2hex(random_bytes(8));
+
+        $state = [
+            'mode'     => $mode,
+            'offset'   => 0,
+            'total'    => \count($files),
+            'files'    => $files,
+            'added'    => [],
+            'modified' => [],
+            'deleted'  => [],
+        ];
+
+        $db = $this->getDatabase();
+
+        if ($mode === 'baseline') {
+            $db->setQuery($db->getQuery(true)->delete($db->quoteName('#__jsecdash_filehashes')))->execute();
+        } elseif ($mode === 'scan') {
+            $meta  = self::META_KEY;
+            $query = $db->getQuery(true)
+                ->select([$db->quoteName('filepath'), $db->quoteName('hash')])
+                ->from($db->quoteName('#__jsecdash_filehashes'))
+                ->where($db->quoteName('filepath') . ' != :meta')
+                ->bind(':meta', $meta);
+
+            $baseline = [];
+
+            foreach ($db->setQuery($query)->loadObjectList() ?: [] as $row) {
+                $baseline[$row->filepath] = $row->hash;
+            }
+
+            $state['baseline'] = $baseline;
+
+            $currentSet = array_flip($files);
+
+            foreach (array_keys($baseline) as $path) {
+                if (!isset($currentSet[$path])) {
+                    $state['deleted'][] = $path;
+                }
+            }
+        }
+
+        File::write($this->statePath($token), json_encode($state));
+
+        return ['token' => $token, 'total' => $state['total']];
+    }
+
+    /**
+     * Processes the next batch of files for a running job.
+     *
+     * @param   string   $token  The job token returned by startJob().
+     * @param   integer  $batch  Number of files to process this call.
+     *
+     * @return  array  Progress payload (processed/total/done/current) or ['error' => ...].
+     *
+     * @since   1.0.0
+     */
+    public function stepJob(string $token, int $batch = 200): array
+    {
+        if (\function_exists('set_time_limit')) {
+            @set_time_limit(0);
+        }
+
+        $path = $this->statePath($token);
+
+        if ($path === false || !is_file($path)) {
+            return ['error' => 'Invalid or expired job token.'];
+        }
+
+        $state = json_decode((string) file_get_contents($path), true);
+
+        if (!\is_array($state)) {
+            return ['error' => 'Corrupt job state.'];
+        }
+
+        $offset = (int) $state['offset'];
+        $total  = (int) $state['total'];
+        $slice  = \array_slice($state['files'], $offset, $batch);
+
+        $db      = $this->getDatabase();
+        $rows    = [];
+        $current = '';
+
+        foreach ($slice as $relative) {
+            $current = $relative;
+            $info    = $this->hashOne($relative);
+
+            if ($state['mode'] === 'baseline') {
+                if ($info !== null) {
+                    $rows[] = [$relative, $info['hash'], $info['size'], $info['modified']];
+                }
+
+                continue;
+            }
+
+            if ($info === null) {
+                continue;
+            }
+
+            if (!isset($state['baseline'][$relative])) {
+                $state['added'][] = $relative;
+            } elseif ($state['baseline'][$relative] !== $info['hash']) {
+                $state['modified'][] = $relative;
+            }
+        }
+
+        if ($state['mode'] === 'baseline' && !empty($rows)) {
+            $query = $db->getQuery(true)->insert($db->quoteName('#__jsecdash_filehashes'))
+                ->columns([
+                    $db->quoteName('filepath'),
+                    $db->quoteName('hash'),
+                    $db->quoteName('filesize'),
+                    $db->quoteName('modified'),
+                ]);
+
+            foreach ($rows as $r) {
+                $query->values(implode(',', [$db->quote($r[0]), $db->quote($r[1]), (int) $r[2], $db->quote($r[3])]));
+            }
+
+            $db->setQuery($query)->execute();
+        }
+
+        $offset         += \count($slice);
+        $state['offset'] = $offset;
+        $done            = $offset >= $total;
+
+        if ($done) {
+            if ($state['mode'] === 'baseline') {
+                $now  = Factory::getDate();
+                $meta = $db->getQuery(true)->insert($db->quoteName('#__jsecdash_filehashes'))
+                    ->columns([
+                        $db->quoteName('filepath'),
+                        $db->quoteName('hash'),
+                        $db->quoteName('filesize'),
+                        $db->quoteName('modified'),
+                    ])
+                    ->values(implode(',', [$db->quote(self::META_KEY), $db->quote($now->toSql()), 0, $db->quote($now->toSql())]));
+                $db->setQuery($meta)->execute();
+            } else {
+                sort($state['added']);
+                sort($state['modified']);
+                sort($state['deleted']);
+
+                Factory::getApplication()->setUserState(
+                    'com_jsecdash.scanner.results',
+                    [
+                        'added'    => $state['added'],
+                        'modified' => $state['modified'],
+                        'deleted'  => $state['deleted'],
+                        'total'    => $total,
+                    ]
+                );
+            }
+
+            @unlink($path);
+        } else {
+            File::write($path, json_encode($state));
+        }
+
+        return [
+            'processed' => min($offset, $total),
+            'total'     => $total,
+            'done'      => $done,
+            'current'   => $current,
+        ];
+    }
+
+    /**
      * Returns the list of file extensions to scan, read from the component
      * options with a sensible fallback to the built-in defaults.
      *

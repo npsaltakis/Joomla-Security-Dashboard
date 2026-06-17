@@ -10,6 +10,7 @@ namespace Joomla\Component\Jsecdash\Administrator\Controller;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Controller\BaseController;
 use Joomla\CMS\Router\Route;
+use Joomla\CMS\Session\Session;
 use Joomla\Component\Jsecdash\Administrator\Model\ScannerModel;
 
 // phpcs:disable PSR1.Files.SideEffects
@@ -167,6 +168,95 @@ class ScannerController extends BaseController
         }
 
         $this->setRedirect(Route::_('index.php?option=com_jsecdash&view=scanner', false));
+    }
+
+    /**
+     * AJAX: starts a chunked baseline or scan job and returns {token, total}.
+     *
+     * @return  void
+     *
+     * @since   1.0.0
+     */
+    public function start(): void
+    {
+        if (!Session::checkToken('post')) {
+            $this->jsonResponse(['error' => Text::_('JINVALID_TOKEN_NOTICE')]);
+
+            return;
+        }
+
+        if (!$this->app->getIdentity()->authorise('core.manage', 'com_jsecdash')) {
+            $this->jsonResponse(['error' => Text::_('JERROR_ALERTNOAUTHOR')]);
+
+            return;
+        }
+
+        $mode = $this->input->post->getCmd('mode', '');
+
+        if (!\in_array($mode, ['baseline', 'scan'], true)) {
+            $this->jsonResponse(['error' => 'Invalid mode.']);
+
+            return;
+        }
+
+        /** @var ScannerModel $model */
+        $model = $this->getModel('Scanner');
+
+        if ($mode === 'scan') {
+            $info = $model->getBaselineInfo();
+
+            if (empty($info['baseline_time'])) {
+                $this->jsonResponse(['error' => Text::_('COM_JSECDASH_SCANNER_NO_BASELINE')]);
+
+                return;
+            }
+        }
+
+        $this->jsonResponse($model->startJob($mode));
+    }
+
+    /**
+     * AJAX: processes the next batch of a running job and returns progress.
+     *
+     * @return  void
+     *
+     * @since   1.0.0
+     */
+    public function step(): void
+    {
+        if (!Session::checkToken('post')) {
+            $this->jsonResponse(['error' => Text::_('JINVALID_TOKEN_NOTICE')]);
+
+            return;
+        }
+
+        if (!$this->app->getIdentity()->authorise('core.manage', 'com_jsecdash')) {
+            $this->jsonResponse(['error' => Text::_('JERROR_ALERTNOAUTHOR')]);
+
+            return;
+        }
+
+        /** @var ScannerModel $model */
+        $model = $this->getModel('Scanner');
+
+        $this->jsonResponse($model->stepJob($this->input->post->getCmd('token', '')));
+    }
+
+    /**
+     * Sends a JSON payload and terminates the application.
+     *
+     * @param   array  $data  The data to encode.
+     *
+     * @return  void
+     *
+     * @since   1.0.0
+     */
+    private function jsonResponse(array $data): void
+    {
+        $this->app->setHeader('Content-Type', 'application/json; charset=utf-8', true);
+        $this->app->sendHeaders();
+        echo json_encode($data);
+        $this->app->close();
     }
 
     /**

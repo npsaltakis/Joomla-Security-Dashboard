@@ -15,6 +15,14 @@ defined('_JEXEC') or die;
 $info        = $this->baselineInfo;
 $results     = $this->results;
 $quarantined = $this->quarantined;
+
+$jsStrings = [
+    'starting'        => Text::_('COM_JSECDASH_SCANNER_PROGRESS_STARTING'),
+    'scanning'        => Text::_('COM_JSECDASH_SCANNER_PROGRESS_SCANNING'),
+    'finishing'       => Text::_('COM_JSECDASH_SCANNER_PROGRESS_FINISHING'),
+    'error'           => Text::_('COM_JSECDASH_SCANNER_PROGRESS_ERROR'),
+    'baselineConfirm' => Text::_('COM_JSECDASH_SCANNER_BASELINE_CONFIRM'),
+];
 ?>
 <div class="jsecdash-scanner">
     <div class="card mb-3">
@@ -31,17 +39,19 @@ $quarantined = $this->quarantined;
                     <?php echo Text::_('COM_JSECDASH_SCANNER_NO_BASELINE'); ?>
                 <?php endif; ?>
             </p>
-            <form action="<?php echo Route::_('index.php?option=com_jsecdash&task=scanner.baseline'); ?>" method="post" class="d-inline"
-                  onsubmit="return confirm('<?php echo Text::_('COM_JSECDASH_SCANNER_BASELINE_CONFIRM'); ?>');">
-                <button type="submit" class="btn btn-primary"><?php echo Text::_('COM_JSECDASH_SCANNER_BASELINE_BUTTON'); ?></button>
-                <?php echo HTMLHelper::_('form.token'); ?>
-            </form>
-            <form action="<?php echo Route::_('index.php?option=com_jsecdash&task=scanner.scan'); ?>" method="post" class="d-inline">
-                <button type="submit" class="btn btn-success" <?php echo $info['baseline_time'] ? '' : 'disabled'; ?>>
+            <div class="mb-2">
+                <button type="button" id="jsd-baseline" class="btn btn-primary"><?php echo Text::_('COM_JSECDASH_SCANNER_BASELINE_BUTTON'); ?></button>
+                <button type="button" id="jsd-scan" class="btn btn-success" <?php echo $info['baseline_time'] ? '' : 'disabled'; ?>>
                     <?php echo Text::_('COM_JSECDASH_SCANNER_SCAN_BUTTON'); ?>
                 </button>
-                <?php echo HTMLHelper::_('form.token'); ?>
-            </form>
+            </div>
+            <div id="jsd-progress" class="d-none mb-1">
+                <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" style="height:22px;">
+                    <div id="jsd-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width:0%">0%</div>
+                </div>
+                <div class="mt-2"><small id="jsd-status" class="text-muted"></small></div>
+                <div><small id="jsd-current" class="text-muted font-monospace text-break"></small></div>
+            </div>
             <p class="text-muted mt-2 mb-0"><small><?php echo Text::_('COM_JSECDASH_SCANNER_SCOPE_NOTE'); ?></small></p>
         </div>
     </div>
@@ -124,3 +134,88 @@ $quarantined = $this->quarantined;
         </div>
     <?php endif; ?>
 </div>
+
+<script>
+(function () {
+    var S = <?php echo json_encode($jsStrings, JSON_UNESCAPED_UNICODE); ?>;
+    var csrf = (window.Joomla && Joomla.getOptions) ? Joomla.getOptions('csrf.token') : '';
+    var box = document.getElementById('jsd-progress');
+    var bar = document.getElementById('jsd-bar');
+    var statusEl = document.getElementById('jsd-status');
+    var currentEl = document.getElementById('jsd-current');
+    var baselineBtn = document.getElementById('jsd-baseline');
+    var scanBtn = document.getElementById('jsd-scan');
+
+    function setBar(p) {
+        bar.style.width = p + '%';
+        bar.textContent = p + '%';
+        bar.setAttribute('aria-valuenow', p);
+    }
+
+    function call(task, params) {
+        var body = new URLSearchParams();
+        if (csrf) { body.set(csrf, '1'); }
+        Object.keys(params).forEach(function (k) { body.set(k, params[k]); });
+
+        return fetch('index.php?option=com_jsecdash&task=' + task, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: body
+        }).then(function (r) {
+            if (!r.ok) { throw new Error('HTTP ' + r.status); }
+            return r.json();
+        });
+    }
+
+    function run(mode) {
+        box.classList.remove('d-none');
+        baselineBtn.disabled = true;
+        if (scanBtn) { scanBtn.disabled = true; }
+        bar.classList.remove('bg-danger');
+        setBar(0);
+        statusEl.textContent = S.starting;
+        currentEl.textContent = '';
+
+        call('scanner.start', { mode: mode }).then(function (s) {
+            if (s.error) { throw new Error(s.error); }
+            var token = s.token;
+
+            function next() {
+                return call('scanner.step', { token: token }).then(function (st) {
+                    if (st.error) { throw new Error(st.error); }
+                    var pct = st.total ? Math.round(st.processed / st.total * 100) : 100;
+                    setBar(pct);
+                    statusEl.textContent = st.processed + ' / ' + st.total;
+                    currentEl.textContent = st.current ? (S.scanning + ' ' + st.current) : '';
+
+                    if (st.done) {
+                        setBar(100);
+                        statusEl.textContent = S.finishing;
+                        window.location.href = 'index.php?option=com_jsecdash&view=scanner';
+                        return;
+                    }
+
+                    return next();
+                });
+            }
+
+            return next();
+        }).catch(function (e) {
+            bar.classList.add('bg-danger');
+            statusEl.textContent = S.error + ' ' + e.message;
+            baselineBtn.disabled = false;
+            if (scanBtn) { scanBtn.disabled = false; }
+        });
+    }
+
+    if (baselineBtn) {
+        baselineBtn.addEventListener('click', function () {
+            if (window.confirm(S.baselineConfirm)) { run('baseline'); }
+        });
+    }
+
+    if (scanBtn) {
+        scanBtn.addEventListener('click', function () { run('scan'); });
+    }
+})();
+</script>
