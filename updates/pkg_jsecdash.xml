@@ -12,6 +12,7 @@
         <description>Security dashboard with WAF, IP blocking and file integrity scanning.</description>
         <element>pkg_jsecdash</element>
         <type>package</type>
+        <client>0</client>
         <version>1.0.3</version>
         <infourl title="Joomla Security Dashboard 1.0.3">https://github.com/npsaltakis/Joomla-Security-Dashboard/releases/tag/v1.0.3</infourl>
         <downloads>
@@ -30,6 +31,7 @@
         <description>Security dashboard with WAF, IP blocking and file integrity scanning.</description>
         <element>pkg_jsecdash</element>
         <type>package</type>
+        <client>0</client>
         <version>1.0.2</version>
         <infourl title="Joomla Security Dashboard 1.0.2">https://github.com/npsaltakis/Joomla-Security-Dashboard/releases/tag/v1.0.2</infourl>
         <downloads>
@@ -48,6 +50,7 @@
         <description>Security dashboard with WAF, IP blocking and file integrity scanning.</description>
         <element>pkg_jsecdash</element>
         <type>package</type>
+        <client>0</client>
         <version>1.0.1</version>
         <infourl title="Joomla Security Dashboard 1.0.1">https://github.com/npsaltakis/Joomla-Security-Dashboard/releases/tag/v1.0.1</infourl>
         <downloads>
