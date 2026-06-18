@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/) and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.0.3] - 2026-06-18
+
+### Fixed
+- Update server manifest now matches Joomla 5.x / 6.x correctly. The
+  `targetplatform` version regex escaped the dot (`[56]\.[0-9]+`) instead of
+  treating it as a wildcard.
+
+### Changed
+- Build script (`build/build.ps1`) is now tracked in the repository and a
+  release checklist was added at `docs/RELEASING.md`.
+
 ## [1.0.2] - 2026-06-17
 
 ### Added
@@ -37,6 +48,7 @@ All notable changes to this project are documented here. The format is based on
   audit log and database backup.
 - System plugin with login-failure tracking, IP enforcement and admin-secret URL hardening.
 
+[1.0.3]: https://github.com/npsaltakis/Joomla-Security-Dashboard/releases/tag/v1.0.3
 [1.0.2]: https://github.com/npsaltakis/Joomla-Security-Dashboard/releases/tag/v1.0.2
 [1.0.1]: https://github.com/npsaltakis/Joomla-Security-Dashboard/releases/tag/v1.0.1
 [1.0.0]: https://github.com/npsaltakis/Joomla-Security-Dashboard/releases/tag/v1.0.0
