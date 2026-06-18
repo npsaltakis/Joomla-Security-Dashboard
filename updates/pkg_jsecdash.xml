@@ -22,7 +22,7 @@
         </tags>
         <maintainer>Joomla Security Dashboard</maintainer>
         <maintainerurl>https://github.com/npsaltakis/Joomla-Security-Dashboard</maintainerurl>
-        <targetplatform name="joomla" version="[56].[0-9]+"/>
+        <targetplatform name="joomla" version="[56]\.[0-9]+"/>
         <php_minimum>8.1</php_minimum>
     </update>
     <update>
@@ -40,7 +40,7 @@
         </tags>
         <maintainer>Joomla Security Dashboard</maintainer>
         <maintainerurl>https://github.com/npsaltakis/Joomla-Security-Dashboard</maintainerurl>
-        <targetplatform name="joomla" version="[56].[0-9]+"/>
+        <targetplatform name="joomla" version="[56]\.[0-9]+"/>
         <php_minimum>8.1</php_minimum>
     </update>
 </updates>

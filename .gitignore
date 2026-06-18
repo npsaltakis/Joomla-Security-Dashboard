@@ -1,6 +1,5 @@
-# Build artifacts
+# Build artifacts (keep build/build.ps1 tracked, ignore only outputs)
 /dist/
-/build/
 *.zip
 
 # Runtime data created by the extension (never source)
