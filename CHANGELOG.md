@@ -4,6 +4,23 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/) and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.0.4] - 2026-06-18
+
+### Added
+- WAF now inspects selected request headers (Referer, X-Forwarded-For, X-Real-IP,
+  X-Forwarded-Host, Origin) and JSON request bodies, not just query/POST/cookies.
+- Command-injection rules are now also evaluated against the request URI and headers.
+- New option **Trust Logged-in Administrators** (default on) to skip firewall
+  inspection for back-end users and avoid false positives on legitimate content.
+- New option **Log Retention (days)** (default 30) with automatic pruning of old
+  firewall log entries.
+
+### Fixed
+- Automatic IP blocks stored the wrong `created` timestamp (equal to the expiry)
+  because `Joomla\CMS\Date::add()` mutates the date object in place.
+- Block responses now guard against already-sent headers and send
+  `X-Content-Type-Options: nosniff`.
+
 ## [1.0.3] - 2026-06-18
 
 ### Fixed
@@ -48,6 +65,7 @@ All notable changes to this project are documented here. The format is based on
   audit log and database backup.
 - System plugin with login-failure tracking, IP enforcement and admin-secret URL hardening.
 
+[1.0.4]: https://github.com/npsaltakis/Joomla-Security-Dashboard/releases/tag/v1.0.4
 [1.0.3]: https://github.com/npsaltakis/Joomla-Security-Dashboard/releases/tag/v1.0.3
 [1.0.2]: https://github.com/npsaltakis/Joomla-Security-Dashboard/releases/tag/v1.0.2
 [1.0.1]: https://github.com/npsaltakis/Joomla-Security-Dashboard/releases/tag/v1.0.1

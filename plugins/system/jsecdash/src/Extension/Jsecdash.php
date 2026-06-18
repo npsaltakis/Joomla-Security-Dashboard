@@ -99,6 +99,12 @@ final class Jsecdash extends CMSPlugin implements SubscriberInterface
             return;
         }
 
+        // Optionally trust logged-in administrators to avoid false positives on
+        // legitimate back-end content (articles, custom HTML, SQL snippets, ...).
+        if ((int) $this->params->get('waf_trust_admins', 1) && $this->isTrustedAdmin()) {
+            return;
+        }
+
         $categories = [];
 
         foreach (['sqli', 'xss', 'lfi', 'cmdi', 'scanner', 'exploit'] as $category) {
@@ -117,12 +123,14 @@ final class Jsecdash extends CMSPlugin implements SubscriberInterface
 
         $params = WafEngine::flatten($_GET)
             + WafEngine::flatten($_POST)
-            + WafEngine::flatten($_COOKIE);
+            + WafEngine::flatten($_COOKIE)
+            + $this->jsonBodyParams();
 
-        $uri = (string) ($_SERVER['REQUEST_URI'] ?? '');
-        $ua  = (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
+        $uri     = (string) ($_SERVER['REQUEST_URI'] ?? '');
+        $ua      = (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
+        $headers = $this->inspectableHeaders();
 
-        $hit = $engine->inspect($params, $uri, $ua);
+        $hit = $engine->inspect($params, $uri, $ua, $headers);
 
         if ($hit === null) {
             return;
@@ -137,6 +145,83 @@ final class Jsecdash extends CMSPlugin implements SubscriberInterface
 
             $this->denyRequest('Request blocked by security policy.');
         }
+    }
+
+    /**
+     * Determines whether the current visitor is a logged-in user that is allowed
+     * to reach the administrator application, in which case the WAF can be skipped
+     * to avoid false positives on legitimate back-end content.
+     *
+     * @return  boolean
+     *
+     * @since   1.0.4
+     */
+    private function isTrustedAdmin(): bool
+    {
+        try {
+            $user = $this->getApplication()->getIdentity();
+
+            return $user !== null && !$user->guest && $user->authorise('core.login.admin');
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Returns the subset of request headers the WAF should inspect, keyed by a
+     * human-readable header name. Empty headers are omitted.
+     *
+     * @return  array<string, string>
+     *
+     * @since   1.0.4
+     */
+    private function inspectableHeaders(): array
+    {
+        $map = [
+            'HTTP_REFERER'          => 'Referer',
+            'HTTP_X_FORWARDED_FOR'  => 'X-Forwarded-For',
+            'HTTP_X_REAL_IP'        => 'X-Real-IP',
+            'HTTP_X_FORWARDED_HOST' => 'X-Forwarded-Host',
+            'HTTP_ORIGIN'           => 'Origin',
+        ];
+
+        $headers = [];
+
+        foreach ($map as $server => $name) {
+            if (!empty($_SERVER[$server])) {
+                $headers[$name] = (string) $_SERVER[$server];
+            }
+        }
+
+        return $headers;
+    }
+
+    /**
+     * Decodes a JSON request body (REST/AJAX calls) into a flat parameter map so
+     * the WAF can inspect it. Returns an empty array for non-JSON or oversized bodies.
+     *
+     * @return  array<string, string>
+     *
+     * @since   1.0.4
+     */
+    private function jsonBodyParams(): array
+    {
+        $contentType = strtolower((string) ($_SERVER['CONTENT_TYPE'] ?? ''));
+
+        if (strpos($contentType, 'json') === false) {
+            return [];
+        }
+
+        $raw = file_get_contents('php://input');
+
+        // Skip empty or oversized bodies to keep the inspection cost bounded.
+        if ($raw === false || $raw === '' || \strlen($raw) > 262144) {
+            return [];
+        }
+
+        $decoded = json_decode($raw, true);
+
+        return \is_array($decoded) ? WafEngine::flatten($decoded) : [];
     }
 
     /**
@@ -187,8 +272,44 @@ final class Jsecdash extends CMSPlugin implements SubscriberInterface
                 );
 
             $db->setQuery($query)->execute();
+
+            // Occasionally prune old rows so the log table stays bounded.
+            if (random_int(1, 100) === 1) {
+                $this->purgeOldWafLogs();
+            }
         } catch (\Throwable $e) {
             // Never let a logging failure interrupt request handling.
+        }
+    }
+
+    /**
+     * Deletes WAF log rows older than the configured retention period. A
+     * retention of 0 days disables pruning. Best-effort; failures are ignored.
+     *
+     * @return  void
+     *
+     * @since   1.0.4
+     */
+    private function purgeOldWafLogs(): void
+    {
+        $days = (int) $this->params->get('waf_log_retention_days', 30);
+
+        if ($days <= 0) {
+            return;
+        }
+
+        try {
+            $db     = $this->getDatabase();
+            $cutoff = Factory::getDate()->sub(new \DateInterval('P' . $days . 'D'))->toSql();
+
+            $query = $db->getQuery(true)
+                ->delete($db->quoteName('#__jsecdash_waf_log'))
+                ->where($db->quoteName('created') . ' < :cutoff')
+                ->bind(':cutoff', $cutoff);
+
+            $db->setQuery($query)->execute();
+        } catch (\Throwable $e) {
+            // Best-effort cleanup.
         }
     }
 
@@ -243,8 +364,12 @@ final class Jsecdash extends CMSPlugin implements SubscriberInterface
      */
     private function denyRequest(string $message): void
     {
-        header('HTTP/1.1 403 Forbidden');
-        header('Content-Type: text/plain; charset=utf-8');
+        if (!headers_sent()) {
+            header('HTTP/1.1 403 Forbidden');
+            header('Content-Type: text/plain; charset=utf-8');
+            header('X-Content-Type-Options: nosniff');
+        }
+
         echo $message;
         $this->getApplication()->close();
     }
@@ -412,6 +537,10 @@ final class Jsecdash extends CMSPlugin implements SubscriberInterface
         $db             = $this->getDatabase();
         $lockoutMinutes = (int) $this->params->get('lockout_minutes', 30);
         $now            = \Joomla\CMS\Factory::getDate();
+
+        // Capture "now" before add(); Joomla's Date::add() mutates the object
+        // in place, so reading $now after it would return the expiry time.
+        $created        = $now->toSql();
         $expires        = $now->add(new \DateInterval('PT' . $lockoutMinutes . 'M'))->toSql();
 
         $existing = $db->getQuery(true)
@@ -454,7 +583,7 @@ final class Jsecdash extends CMSPlugin implements SubscriberInterface
                     [
                         $db->quote($ip),
                         $db->quote($reason),
-                        $db->quote($now->toSql()),
+                        $db->quote($created),
                         $db->quote($expires),
                         1,
                     ]

@@ -5,7 +5,7 @@
     <creationDate>2026-06-16</creationDate>
     <copyright>(C) 2026 Joomla Security Dashboard</copyright>
     <license>GNU General Public License version 2 or later; see LICENSE.txt</license>
-    <version>1.0.3</version>
+    <version>1.0.4</version>
     <description>COM_JSECDASH_XML_DESCRIPTION</description>
     <namespace path="src">Joomla\Component\Jsecdash</namespace>
     <administration>

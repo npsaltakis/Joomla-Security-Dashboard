@@ -5,7 +5,7 @@
     <creationDate>2026-06-16</creationDate>
     <copyright>(C) 2026 Joomla Security Dashboard</copyright>
     <license>GNU General Public License version 2 or later; see LICENSE.txt</license>
-    <version>1.0.3</version>
+    <version>1.0.4</version>
     <description>PLG_SYSTEM_JSECDASH_XML_DESCRIPTION</description>
     <namespace path="src">Joomla\Plugin\System\Jsecdash</namespace>
     <files>
@@ -220,6 +220,28 @@
                     label="PLG_SYSTEM_JSECDASH_FIELD_WAF_CUSTOM_RULES_LABEL"
                     description="PLG_SYSTEM_JSECDASH_FIELD_WAF_CUSTOM_RULES_DESC"
                     filter="raw"
+                    showon="waf_mode!:off"
+                />
+                <field
+                    name="waf_trust_admins"
+                    type="radio"
+                    layout="joomla.form.field.radio.switcher"
+                    label="PLG_SYSTEM_JSECDASH_FIELD_WAF_TRUST_ADMINS_LABEL"
+                    description="PLG_SYSTEM_JSECDASH_FIELD_WAF_TRUST_ADMINS_DESC"
+                    default="1"
+                    filter="integer"
+                    showon="waf_mode!:off"
+                >
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+                <field
+                    name="waf_log_retention_days"
+                    type="number"
+                    label="PLG_SYSTEM_JSECDASH_FIELD_WAF_LOG_RETENTION_LABEL"
+                    description="PLG_SYSTEM_JSECDASH_FIELD_WAF_LOG_RETENTION_DESC"
+                    default="30"
+                    filter="integer"
                     showon="waf_mode!:off"
                 />
             </fieldset>

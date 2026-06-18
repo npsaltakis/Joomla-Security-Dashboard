@@ -122,15 +122,16 @@ final class WafEngine
     /**
      * Inspects a request and returns the first matching rule.
      *
-     * @param   array   $params  Flattened request parameters as [key => value].
-     * @param   string  $uri     The raw request URI.
-     * @param   string  $ua      The User-Agent header.
+     * @param   array   $params   Flattened request parameters as [key => value].
+     * @param   string  $uri      The raw request URI.
+     * @param   string  $ua       The User-Agent header.
+     * @param   array   $headers  Selected request headers as [name => value].
      *
      * @return  array|null  ['rule_id', 'category', 'field', 'snippet'] or null when clean.
      *
      * @since   1.0.0
      */
-    public function inspect(array $params, string $uri, string $ua): ?array
+    public function inspect(array $params, string $uri, string $ua, array $headers = []): ?array
     {
         $uris = [$uri];
         $decoded = rawurldecode($uri);
@@ -147,6 +148,14 @@ final class WafEngine
                     foreach ($params as $key => $value) {
                         if ($this->matches($pattern, $value)) {
                             return $this->hit($id, $category, $key, $value);
+                        }
+                    }
+                }
+
+                if (\in_array('headers', $targets, true)) {
+                    foreach ($headers as $name => $value) {
+                        if ($this->matches($pattern, $value)) {
+                            return $this->hit($id, $category, $name, $value);
                         }
                     }
                 }
@@ -229,8 +238,8 @@ final class WafEngine
         return match ($category) {
             'scanner' => ['ua'],
             'exploit' => ['uri'],
-            'cmdi'    => ['params'],
-            default   => ['params', 'uri'],
+            'cmdi'    => ['params', 'uri', 'headers'],
+            default   => ['params', 'uri', 'headers'],
         };
     }
 
