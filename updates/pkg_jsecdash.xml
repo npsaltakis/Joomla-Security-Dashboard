@@ -18,6 +18,8 @@
         <downloads>
             <downloadurl type="full" format="zip">https://github.com/npsaltakis/Joomla-Security-Dashboard/releases/download/v1.0.4/pkg_jsecdash-1.0.4.zip</downloadurl>
         </downloads>
+        <sha256>41eaf46f214e5360ceadeaba69fcc867b99a4c73fd8fba2c0545bf5fa646ea8a</sha256>
+        <sha384>6203225077997b393242a22b58359d132347e549eda51e8b9b245e7d25bf8bf472470b43f2dbcabfd8fe74e13dcfc133</sha384>
         <tags>
             <tag>stable</tag>
         </tags>

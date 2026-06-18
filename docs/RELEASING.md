@@ -60,12 +60,33 @@ Produces in `dist/`:
 - Attach `dist/pkg_jsecdash-<version>.zip`. The asset name must exactly match the
   `<downloadurl>` in step 4, or the update will appear but fail to download.
 
-## 7. Push to `main`
+## 7. Add the download checksum
+
+Joomla shows *"This extension does not provide a checksum…"* unless the update
+manifest carries a hash of the package. Compute it from the **released asset**
+(not the local build — the CI-built ZIP can differ byte-for-byte), then add it
+to the new `<update>` block:
+
+```bash
+curl -sL -o pkg.zip \
+  https://github.com/npsaltakis/Joomla-Security-Dashboard/releases/download/v<version>/pkg_jsecdash-<version>.zip
+sha256sum pkg.zip
+sha384sum pkg.zip
+```
+
+```xml
+        </downloads>
+        <sha256>…</sha256>
+        <sha384>…</sha384>
+```
+
+## 8. Push to `main`
 
 Commit and push the version bumps, changelog, any new SQL, and the updated
-`updates/pkg_jsecdash.xml` to `main`. Only now will existing installs see the update.
+`updates/pkg_jsecdash.xml` (including the checksums) to `main`. Only now will
+existing installs see the update.
 
-## 8. Verify
+## 9. Verify
 
 In a test Joomla site: **System → Update → Extensions → Find Updates**. The new
 version should appear and update cleanly (no uninstall, settings and data preserved).
